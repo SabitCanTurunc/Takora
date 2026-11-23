@@ -1,0 +1,17 @@
+{
+  "name": "Takora",
+  "short_name": "Takora",
+  "description": "İşletmenizin günlük işlerini ve müşteri geçmişini tek yerde toplayın.",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#18181b",
+  "lang": "tr",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "any",
+      "type": "image/x-icon"
+    }
+  ]
+}

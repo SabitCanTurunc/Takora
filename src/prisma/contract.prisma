@@ -1,0 +1,235 @@
+// use prisma-8
+
+// ─── Kullanıcı ve Kimlik Doğrulama ───────────────────────────────────────────
+
+model User {
+  id            String    @id @onCreate(cuid(2))
+  email         String    @unique
+  emailVerified DateTime?
+  passwordHash  String?
+  name          String?
+  image         String?
+  createdAt     DateTime  @default(now()) @onCreate(now())
+  updatedAt     temporal.UpdatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  uyeler        IsletmeUye[]
+}
+
+model Account {
+  id                String  @id @onCreate(cuid(2))
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @onCreate(cuid(2))
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── İşletme (Tenant) ────────────────────────────────────────────────────────
+
+model Isletme {
+  id          String   @id @onCreate(cuid(2))
+  ad          String
+  slug        String   @unique
+  sektor      String   @default("oto-servis")
+  telefon     String?
+  adres       String?
+  logoUrl     String?
+  plan        String   @default("FREE")
+  aktif       Boolean  @default(true)
+  createdAt   DateTime @default(now()) @onCreate(now())
+  updatedAt   temporal.UpdatedAt
+
+  uyeler      IsletmeUye[]
+  musteriler  Musteri[]
+  isler       Is[]
+  randevular  Randevu[]
+  whatsappMesajlar WhatsappMesaj[]
+  ocrKullanimlar OcrKullanim[]
+}
+
+model IsletmeUye {
+  id          String       @id @onCreate(cuid(2))
+  isletmeId   String
+  userId      String
+  rol         IsletmeRol   @default(CALISAN)
+  aktif       Boolean      @default(true)
+  createdAt   DateTime     @default(now()) @onCreate(now())
+
+  isletme     Isletme      @relation(fields: [isletmeId], references: [id], onDelete: Cascade)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([isletmeId, userId])
+}
+
+enum IsletmeRol {
+  SAHIP
+  YONETICI
+  CALISAN
+}
+
+// ─── Müşteri ve Araç ─────────────────────────────────────────────────────────
+
+model Musteri {
+  id          String   @id @onCreate(cuid(2))
+  isletmeId   String
+  ad          String
+  soyad       String?
+  telefon     String?
+  email       String?
+  notlar      String?
+  createdAt   DateTime @default(now()) @onCreate(now())
+  updatedAt   temporal.UpdatedAt
+
+  isletme     Isletme  @relation(fields: [isletmeId], references: [id], onDelete: Cascade)
+  araclar     Arac[]
+  isler       Is[]
+}
+
+model Arac {
+  id          String   @id @onCreate(cuid(2))
+  musteriId   String
+  plaka       String?
+  marka       String?
+  model       String?
+  yil         Int?
+  renk        String?
+  km          Int?
+  notlar      String?
+  createdAt   DateTime @default(now()) @onCreate(now())
+  updatedAt   temporal.UpdatedAt
+
+  musteri     Musteri  @relation(fields: [musteriId], references: [id], onDelete: Cascade)
+  isler       Is[]
+}
+
+// ─── İş Kaydı ────────────────────────────────────────────────────────────────
+
+model Is {
+  id              String    @id @onCreate(cuid(2))
+  isletmeId       String
+  musteriId       String?
+  aracId          String?
+  baslik          String
+  aciklama        String?
+  asama           IsAsama   @default(BEKLIYOR)
+  oncelik         Int       @default(0)
+  tahminiTutar    Float?
+  gercekTutar     Float?
+  takipToken      String?   @unique
+  odemeDurumu     OdemeDurumu @default(ODENMEDI)
+  teslimTarihi    DateTime?
+  createdAt       DateTime  @default(now()) @onCreate(now())
+  updatedAt       temporal.UpdatedAt
+
+  isletme         Isletme   @relation(fields: [isletmeId], references: [id], onDelete: Cascade)
+  musteri         Musteri?  @relation(fields: [musteriId], references: [id])
+  arac            Arac?     @relation(fields: [aracId], references: [id])
+  notlar          IsNot[]
+  fotolar         IsFoto[]
+}
+
+enum IsAsama {
+  BEKLIYOR
+  DEVAM_EDIYOR
+  TAMAMLANDI
+  TESLIM_EDILDI
+  IPTAL
+}
+
+enum OdemeDurumu {
+  ODENMEDI
+  KISMI_ODENDI
+  ODENDI
+}
+
+model IsNot {
+  id        String   @id @onCreate(cuid(2))
+  isId      String
+  icerik    String
+  createdAt DateTime @default(now()) @onCreate(now())
+
+  is        Is       @relation(fields: [isId], references: [id], onDelete: Cascade)
+}
+
+model IsFoto {
+  id        String   @id @onCreate(cuid(2))
+  isId      String
+  key       String
+  createdAt DateTime @default(now()) @onCreate(now())
+
+  is        Is       @relation(fields: [isId], references: [id], onDelete: Cascade)
+}
+
+model OcrKullanim {
+  id          String   @id @onCreate(cuid(2))
+  isletmeId   String
+  tarih       DateTime @default(now()) @onCreate(now())
+  sayi        Int      @default(1)
+
+  isletme     Isletme  @relation(fields: [isletmeId], references: [id], onDelete: Cascade)
+}
+
+model WhatsappMesaj {
+  id            String   @id @onCreate(cuid(2))
+  isletmeId     String
+  aliciTelefon  String
+  sablonKey     String
+  icerik        String
+  durum         String   @default("BEKLIYOR")
+  hata          String?
+  createdAt     DateTime @default(now()) @onCreate(now())
+
+  isletme       Isletme  @relation(fields: [isletmeId], references: [id], onDelete: Cascade)
+}
+
+// ─── Randevu ─────────────────────────────────────────────────────────────────
+
+model Randevu {
+  id          String        @id @onCreate(cuid(2))
+  isletmeId   String
+  musteriId   String?
+  baslik      String
+  tarih       DateTime
+  sure        Int           @default(60)
+  durum       RandevuDurum  @default(BEKLIYOR)
+  notlar      String?
+  createdAt   DateTime      @default(now()) @onCreate(now())
+  updatedAt   temporal.UpdatedAt
+
+  isletme     Isletme       @relation(fields: [isletmeId], references: [id], onDelete: Cascade)
+}
+
+enum RandevuDurum {
+  BEKLIYOR
+  ONAYLANDI
+  IPTAL
+  TAMAMLANDI
+}
