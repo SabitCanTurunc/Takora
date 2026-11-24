@@ -103,3 +103,83 @@ export function providerForPlan(plan: string) {
   if (process.env.AI_PROVIDER === "gemini") return "gemini";
   return plan === "PREMIUM" ? "openai" : "gemini";
 }
+
+export async function plakaExtract(
+  buffer: Buffer,
+  mimeType: string
+): Promise<string> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  // Gemini öncelikli (ücretsiz)
+  if (apiKey) {
+    const model = process.env.GEMINI_MODEL || "gemini-3.5-flash";
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-goog-api-key": apiKey,
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text: "Bu fotoğraftaki araç plakasını oku. Sadece plaka metnini döndür (ör. 34 ABC 123). Başka hiçbir şey yazma.",
+                },
+                {
+                  inline_data: {
+                    mime_type: mimeType,
+                    data: buffer.toString("base64"),
+                  },
+                },
+              ],
+            },
+          ],
+        }),
+      }
+    );
+    if (!res.ok) throw new Error(`Gemini hata: ${res.status}`);
+    const data = await res.json();
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    return text.trim().replace(/[^A-Z0-9 ]/gi, "").trim();
+  }
+
+  const openaiKey = process.env.OPENAI_API_KEY;
+  if (openaiKey) {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${openaiKey}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: "Bu fotoğraftaki araç plakasını oku. Sadece plaka metnini döndür (ör. 34 ABC 123).",
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:${mimeType};base64,${buffer.toString("base64")}`,
+                },
+              },
+            ],
+          },
+        ],
+        max_tokens: 50,
+      }),
+    });
+    if (!res.ok) throw new Error(`OpenAI hata: ${res.status}`);
+    const data = await res.json();
+    const text = data?.choices?.[0]?.message?.content || "";
+    return text.trim().replace(/[^A-Z0-9 ]/gi, "").trim();
+  }
+
+  throw new Error("AI servisi yapılandırılmamış.");
+}

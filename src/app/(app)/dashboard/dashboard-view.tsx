@@ -31,9 +31,10 @@ type IsKaydi = {
   saat: string;
   telefon?: string;
   tahminiTutar?: number | null;
+  km?: number | null;
   aciklama?: string | null;
   notlar: { id: string; metin: string; tarih: string }[];
-  fotolar: { id: string; key: string }[];
+  fotolar: { id: string; key: string; tip?: string }[];
   takipToken?: string | null;
 };
 
@@ -136,6 +137,15 @@ export function DashboardView({ kullaniciAdi, isler }: Props) {
                         </p>
                         <p className="text-xs text-zinc-500 mt-0.5">
                           {is.musteriAd}
+                          {is.telefon && (
+                            <a
+                              href={`tel:${is.telefon}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="ml-2 text-blue-600 dark:text-blue-400 hover:underline"
+                            >
+                              {is.telefon}
+                            </a>
+                          )}
                           {is.plaka && (
                             <span className="ml-2 font-mono bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-zinc-700 dark:text-zinc-300 font-medium">
                               {is.plaka}

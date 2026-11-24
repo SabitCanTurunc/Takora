@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { ClipboardList, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,7 @@ type IsKaydi = {
   aracId: string | null;
   asama: "BEKLIYOR" | "DEVAM_EDIYOR" | "TAMAMLANDI" | "TESLIM_EDILDI" | "IPTAL";
   tahminiTutar: number | null;
+  km?: number | null;
   aciklama: string | null;
   saat?: string;
   tarih?: string;
@@ -23,7 +24,7 @@ type IsKaydi = {
   plaka?: string;
   markaModel?: string;
   notlar: { id: string; metin: string; tarih: string }[];
-  fotolar: { id: string; key: string }[];
+  fotolar: { id: string; key: string; tip?: string }[];
   takipToken?: string | null;
 };
 
@@ -45,11 +46,23 @@ export default function IslerView({
 }) {
   const [seciliId, setSeciliId] = useState<string | null>(null);
   const [filtre, setFiltre] = useState<string>("TUMU");
+  const [arama, setArama] = useState("");
 
-  const filtrelenmis = isler.filter((i) => {
-    if (filtre === "TUMU") return true;
-    return i.asama === filtre;
-  });
+  const filtrelenmis = useMemo(() => {
+    const term = arama.trim().toLowerCase();
+    return isler.filter((i) => {
+      if (filtre !== "TUMU" && i.asama !== filtre) return false;
+      if (!term) return true;
+      return (
+        i.baslik.toLowerCase().includes(term) ||
+        i.musteriAd.toLowerCase().includes(term) ||
+        (i.plaka || "").toLowerCase().includes(term) ||
+        (i.markaModel || "").toLowerCase().includes(term) ||
+        (i.telefon || "").toLowerCase().includes(term) ||
+        (i.aciklama || "").toLowerCase().includes(term)
+      );
+    });
+  }, [isler, filtre, arama]);
 
   const seciliIs = isler.find((i) => i.id === seciliId) || null;
 
@@ -69,6 +82,16 @@ export default function IslerView({
               Yeni İş Aç
             </Button>
           }
+        />
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-3">
+        <input
+          type="search"
+          placeholder="İş, müşteri, plaka, marka veya telefon ara..."
+          value={arama}
+          onChange={(e) => setArama(e.target.value)}
+          className="flex-1 h-10 rounded-lg border border-zinc-200 bg-white px-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
         />
       </div>
 
@@ -130,6 +153,15 @@ export default function IslerView({
                         </div>
                         <p className="text-xs text-zinc-500 mt-1 flex items-center flex-wrap gap-2">
                           <span>{is.musteriAd}</span>
+                          {is.telefon && (
+                            <a
+                              href={`tel:${is.telefon}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="text-blue-600 dark:text-blue-400 hover:underline"
+                            >
+                              {is.telefon}
+                            </a>
+                          )}
                           {is.plaka && (
                             <span className="font-mono bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-zinc-700 dark:text-zinc-300">
                               {is.plaka}

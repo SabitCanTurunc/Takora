@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'1d404e201a7e62ae653e22d7b68fafe918718862f39415e66ccc704262dea242'>;
+  StorageHashBase<'98cc4781028915b9235017228ce1b9860ea10ef5bb4eb89092a861a470622004'>;
 export type ExecutionHash =
   ExecutionHashBase<'eac86adc394d943406fe1b7128e3aa613464ded5c8631699ca3cc7bdb1adb38b'>;
 export type ProfileHash =
@@ -402,11 +402,13 @@ export namespace Models {
     gercekTutar: FieldOutputTypes['public']['Is']['gercekTutar'];
     id: FieldOutputTypes['public']['Is']['id'];
     isletmeId: FieldOutputTypes['public']['Is']['isletmeId'];
+    km: FieldOutputTypes['public']['Is']['km'];
     musteriId: FieldOutputTypes['public']['Is']['musteriId'];
     odemeDurumu: FieldOutputTypes['public']['Is']['odemeDurumu'];
     oncelik: FieldOutputTypes['public']['Is']['oncelik'];
     tahminiTutar: FieldOutputTypes['public']['Is']['tahminiTutar'];
     takipToken: FieldOutputTypes['public']['Is']['takipToken'];
+    takipTokenExpiresAt: FieldOutputTypes['public']['Is']['takipTokenExpiresAt'];
     teslimTarihi: FieldOutputTypes['public']['Is']['teslimTarihi'];
     updatedAt: FieldOutputTypes['public']['Is']['updatedAt'];
     arac: public_Arac | null;
@@ -421,6 +423,7 @@ export namespace Models {
     id: FieldOutputTypes['public']['IsFoto']['id'];
     isId: FieldOutputTypes['public']['IsFoto']['isId'];
     key: FieldOutputTypes['public']['IsFoto']['key'];
+    tip: FieldOutputTypes['public']['IsFoto']['tip'];
     is: public_Is;
     readonly [RelationKeys]?: 'is';
   };
@@ -833,6 +836,12 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly many: false;
                 };
+                readonly km: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly musteriId: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
@@ -869,6 +878,13 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly takipTokenExpiresAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 3 };
                   readonly many: false;
                 };
                 readonly teslimTarihi: {
@@ -973,6 +989,16 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly tip: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'FOTO'>;
+                  };
                   readonly many: false;
                 };
               };
@@ -1983,6 +2009,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly km: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
               readonly musteriId: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -2002,6 +2032,14 @@ type ContractBase = Omit<
               readonly takipToken: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly takipTokenExpiresAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
               };
               readonly teslimTarihi: {
                 readonly nullable: true;
@@ -2089,11 +2127,13 @@ type ContractBase = Omit<
                 readonly gercekTutar: { readonly column: 'gercekTutar' };
                 readonly id: { readonly column: 'id' };
                 readonly isletmeId: { readonly column: 'isletmeId' };
+                readonly km: { readonly column: 'km' };
                 readonly musteriId: { readonly column: 'musteriId' };
                 readonly odemeDurumu: { readonly column: 'odemeDurumu' };
                 readonly oncelik: { readonly column: 'oncelik' };
                 readonly tahminiTutar: { readonly column: 'tahminiTutar' };
                 readonly takipToken: { readonly column: 'takipToken' };
+                readonly takipTokenExpiresAt: { readonly column: 'takipTokenExpiresAt' };
                 readonly teslimTarihi: { readonly column: 'teslimTarihi' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
               };
@@ -2121,6 +2161,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly tip: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
             };
             readonly relations: {
               readonly is: {
@@ -2141,6 +2185,7 @@ type ContractBase = Omit<
                 readonly id: { readonly column: 'id' };
                 readonly isId: { readonly column: 'isId' };
                 readonly key: { readonly column: 'key' };
+                readonly tip: { readonly column: 'tip' };
               };
             };
           };

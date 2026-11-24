@@ -521,6 +521,13 @@
                   "kind": "scalar"
                 }
               },
+              "km": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
               "musteriId": {
                 "nullable": true,
                 "type": {
@@ -560,6 +567,16 @@
                 "type": {
                   "codecId": "pg/text@1",
                   "kind": "scalar"
+                }
+              },
+              "takipTokenExpiresAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
                 }
               },
               "teslimTarihi": {
@@ -689,6 +706,9 @@
                 "isletmeId": {
                   "column": "isletmeId"
                 },
+                "km": {
+                  "column": "km"
+                },
                 "musteriId": {
                   "column": "musteriId"
                 },
@@ -703,6 +723,9 @@
                 },
                 "takipToken": {
                   "column": "takipToken"
+                },
+                "takipTokenExpiresAt": {
+                  "column": "takipTokenExpiresAt"
                 },
                 "teslimTarihi": {
                   "column": "teslimTarihi"
@@ -747,6 +770,13 @@
                   "codecId": "pg/text@1",
                   "kind": "scalar"
                 }
+              },
+              "tip": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
               }
             },
             "relations": {
@@ -780,6 +810,9 @@
                 },
                 "key": {
                   "column": "key"
+                },
+                "tip": {
+                  "column": "tip"
                 }
               },
               "namespaceId": "public",
@@ -2224,6 +2257,11 @@
                   "dataType": "pg/text",
                   "nullable": false
                 },
+                "km": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
                 "musteriId": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -2262,6 +2300,14 @@
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
                   "nullable": true
+                },
+                "takipTokenExpiresAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
                 },
                 "teslimTarihi": {
                   "codecId": "pg/timestamptz-date@1",
@@ -2406,6 +2452,15 @@
                 "key": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
+                  "nullable": false
+                },
+                "tip": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "FOTO"
+                  },
                   "nullable": false
                 }
               },
@@ -3358,7 +3413,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "1d404e201a7e62ae653e22d7b68fafe918718862f39415e66ccc704262dea242"
+    "storageHash": "98cc4781028915b9235017228ce1b9860ea10ef5bb4eb89092a861a470622004"
   },
   "execution": {
     "executionHash": "eac86adc394d943406fe1b7128e3aa613464ded5c8631699ca3cc7bdb1adb38b",

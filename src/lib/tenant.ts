@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/prisma/db";
+import { rolSeviyesi } from "./roller";
 
 export async function aktifIsletmeId() {
   const session = await auth();
@@ -41,11 +42,7 @@ export async function aktifUyelik() {
   return { session, isletmeId, uyelik };
 }
 
-export function rolSeviyesi(rol: string) {
-  if (rol === "SAHIP") return 3;
-  if (rol === "YONETICI") return 2;
-  return 1;
-}
+export { rolSeviyesi };
 
 export async function yetkiKontrol(minRol: "CALISAN" | "YONETICI" | "SAHIP") {
   const { uyelik } = await aktifUyelik();

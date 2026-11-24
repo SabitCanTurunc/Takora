@@ -47,10 +47,10 @@ export default async function IslerPage() {
     isIds.length > 0
       ? await db.orm.public.IsFoto.where((f) => f.isId.in(isIds)).all()
       : [];
-  const fotoMap = new Map<string, { id: string; key: string }[]>();
+  const fotoMap = new Map<string, { id: string; key: string; tip?: string }[]>();
   for (const f of fotolar) {
     const list = fotoMap.get(f.isId) || [];
-    list.push({ id: f.id, key: f.key });
+    list.push({ id: f.id, key: f.key, tip: f.tip });
     fotoMap.set(f.isId, list);
   }
 
@@ -65,6 +65,7 @@ export default async function IslerPage() {
       aracId: is.aracId,
       asama: is.asama as "BEKLIYOR" | "DEVAM_EDIYOR" | "TAMAMLANDI" | "TESLIM_EDILDI" | "IPTAL",
       tahminiTutar: is.tahminiTutar,
+      km: is.km,
       aciklama: is.aciklama,
       saat: createdAt.toLocaleTimeString("tr-TR", {
         hour: "2-digit",

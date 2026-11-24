@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Dialog,
@@ -12,9 +12,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { isAsamaGuncelle, isNotEkle, fotoEkle, takipLinkiOlustur, takipLinkiIptal, whatsappMesajGonder } from "@/app/(app)/isler/actions";
+import { isAsamaGuncelle, isNotEkle, fotoEkle, fotoSil, takipLinkiOlustur, takipLinkiIptal, whatsappMesajGonder, aktifRolGetir } from "@/app/(app)/isler/actions";
 import { formatPara } from "@/lib/utils";
-import { Phone, Car, Clock, Send } from "lucide-react";
+import { Phone, Car, Clock, Send, Trash2 } from "lucide-react";
 
 type AsamaTipi = "BEKLIYOR" | "DEVAM_EDIYOR" | "TAMAMLANDI" | "TESLIM_EDILDI" | "IPTAL";
 
@@ -27,9 +27,10 @@ export interface IsDetay {
   telefon?: string | null;
   plaka?: string | null;
   tahminiTutar?: number | null;
+  km?: number | null;
   aciklama?: string | null;
   notlar: { id: string; metin: string; tarih: string }[];
-  fotolar?: { id: string; key: string }[];
+  fotolar?: { id: string; key: string; tip?: string }[];
   takipToken?: string | null;
 }
 
@@ -56,11 +57,18 @@ export function IsDetayDialog({ isKaydi, open, onOpenChange }: Props) {
   const [yeniNot, setYeniNot] = useState("");
   const [fotoHata, setFotoHata] = useState<string | null>(null);
   const [fotoPending, startFotoTransition] = useTransition();
+  const [rol, setRol] = useState<string | null>(null);
+  const [seciliFotolar, setSeciliFotolar] = useState<File[]>([]);
+  const [onizlemeler, setOnizlemeler] = useState<string[]>([]);
   const [takipUrl, setTakipUrl] = useState<string | null>(() =>
     isKaydi?.takipToken
       ? `${typeof window !== "undefined" ? window.location.origin : ""}/takip/${isKaydi.takipToken}`
       : null
   );
+
+  useEffect(() => {
+    aktifRolGetir().then(setRol).catch(() => setRol(null));
+  }, []);
   const [takipPending, startTakipTransition] = useTransition();
   const [whatsappPending, startWhatsappTransition] = useTransition();
   const [whatsappSonuc, setWhatsappSonuc] = useState<string | null>(null);
@@ -99,6 +107,9 @@ export function IsDetayDialog({ isKaydi, open, onOpenChange }: Props) {
         return;
       }
       setFotoHata(null);
+      onizlemeler.forEach((u) => URL.revokeObjectURL(u));
+      setOnizlemeler([]);
+      setSeciliFotolar([]);
       form.reset();
       router.refresh();
     });
@@ -191,6 +202,11 @@ export function IsDetayDialog({ isKaydi, open, onOpenChange }: Props) {
                 ? formatPara(isKaydi.tahminiTutar)
                 : "Belirtilmedi"}
             </p>
+            {isKaydi.km != null && (
+              <p className="text-xs text-zinc-500 mt-1">
+                Kilometre: {isKaydi.km.toLocaleString("tr-TR")} km
+              </p>
+            )}
           </div>
         </div>
 
@@ -217,7 +233,29 @@ export function IsDetayDialog({ isKaydi, open, onOpenChange }: Props) {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => navigator.clipboard?.writeText(takipUrl)}
+                  onClick={async () => {
+                    try {
+                      if (navigator.clipboard?.writeText) {
+                        await navigator.clipboard.writeText(takipUrl);
+                        return;
+                      }
+                    } catch {
+                      // fallback below
+                    }
+                    try {
+                      const ta = document.createElement("textarea");
+                      ta.value = takipUrl;
+                      ta.style.position = "fixed";
+                      ta.style.opacity = "0";
+                      document.body.appendChild(ta);
+                      ta.focus();
+                      ta.select();
+                      document.execCommand("copy");
+                      document.body.removeChild(ta);
+                    } catch {
+                      // ignore
+                    }
+                  }}
                 >
                   Kopyala
                 </Button>
@@ -310,40 +348,183 @@ export function IsDetayDialog({ isKaydi, open, onOpenChange }: Props) {
 
           {isKaydi.fotolar && isKaydi.fotolar.length > 0 && (
             <div className="grid grid-cols-3 gap-2">
-              {isKaydi.fotolar.map((f) => (
-                <a
+              {isKaydi.fotolar
+                ?.filter((f) => (f.tip || "FOTO") !== "FATURA")
+                .map((f) => (
+                <div
                   key={f.id}
-                  href={`/api/fotograf?key=${encodeURIComponent(f.key)}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="block aspect-square overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800"
+                  className="relative aspect-square overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800 group"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                  <img
                     src={`/api/fotograf?key=${encodeURIComponent(f.key)}`}
                     alt="İş fotoğrafı"
                     className="h-full w-full object-cover"
                   />
-                </a>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      startFotoTransition(async () => {
+                        await fotoSil(isKaydi!.id, f.id);
+                        router.refresh();
+                      })
+                    }
+                    className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white rounded-full w-7 h-7 flex items-center justify-center shadow-md"
+                    title="Sil"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               ))}
             </div>
           )}
 
-          <form onSubmit={handleFotoEkle} className="flex items-center gap-2 mt-2">
-            <input
-              type="file"
-              name="foto"
-              accept="image/*"
-              className="text-xs"
-            />
-            <Button size="sm" type="submit" disabled={fotoPending}>
-              Fotoğraf Yükle
+          <form onSubmit={handleFotoEkle} className="flex flex-col gap-2 mt-2">
+            <label
+              htmlFor={`foto-${isKaydi.id}`}
+              className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl p-4 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors"
+            >
+              <div className="flex items-center gap-2 text-zinc-500">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+                  <circle cx="9" cy="9" r="2" />
+                  <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                </svg>
+                <span className="text-sm font-medium">Fotoğraf seç</span>
+              </div>
+              <span className="text-xs text-zinc-400 text-center">
+                Galeriden veya kameradan çoklu seçim yapabilirsiniz
+              </span>
+              <input
+                id={`foto-${isKaydi.id}`}
+                type="file"
+                name="foto"
+                accept="image/*"
+                multiple
+                capture="environment"
+                className="hidden"
+                onChange={(e) => {
+                  const files = Array.from(e.target.files || []);
+                  setSeciliFotolar(files);
+                  setOnizlemeler(files.map((f) => URL.createObjectURL(f)));
+                }}
+              />
+            </label>
+
+            {onizlemeler.length > 0 && (
+              <div className="grid grid-cols-4 gap-2">
+                {onizlemeler.map((src, i) => (
+                  <div key={i} className="aspect-square overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800 relative">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={src} alt="önizleme" className="h-full w-full object-cover" />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {seciliFotolar.length > 0 && (
+              <p className="text-xs text-zinc-500">
+                {seciliFotolar.length} fotoğraf seçildi
+              </p>
+            )}
+
+            <Button size="sm" type="submit" disabled={fotoPending || seciliFotolar.length === 0} className="self-end">
+              {fotoPending ? (
+                <span className="flex items-center gap-2">
+                  <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                  </svg>
+                  Yükleniyor...
+                </span>
+              ) : (
+                "Seçilenleri Yükle"
+              )}
             </Button>
           </form>
           {fotoHata && (
             <p className="text-xs text-red-600">{fotoHata}</p>
           )}
         </div>
+
+        {rol === "SAHIP" && (
+          <div className="flex flex-col gap-2 pt-1">
+            <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+              Faturalar ({isKaydi.fotolar?.filter((f) => f.tip === "FATURA").length || 0})
+            </span>
+
+            {isKaydi.fotolar && isKaydi.fotolar.filter((f) => f.tip === "FATURA").length > 0 && (
+              <div className="grid grid-cols-3 gap-2">
+                {isKaydi.fotolar
+                  .filter((f) => f.tip === "FATURA")
+                  .map((f) => (
+                    <div
+                      key={f.id}
+                      className="relative aspect-square overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800 group"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={`/api/fotograf?key=${encodeURIComponent(f.key)}`}
+                        alt="Fatura"
+                        className="h-full w-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          startFotoTransition(async () => {
+                            await fotoSil(isKaydi!.id, f.id);
+                            router.refresh();
+                          })
+                        }
+                        className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white rounded-full w-7 h-7 flex items-center justify-center shadow-md"
+                        title="Sil"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+              </div>
+            )}
+
+            <form onSubmit={handleFotoEkle} className="flex flex-col gap-2 mt-2">
+              <input type="hidden" name="tip" value="FATURA" />
+              <label
+                htmlFor={`fatura-${isKaydi.id}`}
+                className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl p-4 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors"
+              >
+                <span className="text-sm font-medium text-zinc-500">Fatura fotoğrafı seç</span>
+                <input
+                  id={`fatura-${isKaydi.id}`}
+                  type="file"
+                  name="foto"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    setSeciliFotolar(files);
+                    setOnizlemeler(files.map((f) => URL.createObjectURL(f)));
+                  }}
+                />
+              </label>
+
+              {onizlemeler.length > 0 && (
+                <div className="grid grid-cols-4 gap-2">
+                  {onizlemeler.map((src, i) => (
+                    <div key={i} className="aspect-square overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={src} alt="önizleme" className="h-full w-full object-cover" />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <Button size="sm" type="submit" disabled={fotoPending || seciliFotolar.length === 0} className="self-end">
+                {fotoPending ? "Yükleniyor..." : "Faturaları Yükle"}
+              </Button>
+            </form>
+          </div>
+        )}
 
         <div className="flex flex-col gap-2 pt-1">
           <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500">

@@ -2,9 +2,10 @@
 
 import { db } from "@/prisma/db";
 import { revalidatePath } from "next/cache";
-import { aktifIsletmeId } from "@/lib/tenant";
+import { aktifIsletmeId, yetkiKontrol } from "@/lib/tenant";
 
 export async function randevuEkle(formData: FormData) {
+  await yetkiKontrol("CALISAN");
   const isletmeId = await aktifIsletmeId();
 
   const baslik = String(formData.get("baslik") || "").trim();
@@ -17,9 +18,11 @@ export async function randevuEkle(formData: FormData) {
     return { hata: "Tüm zorunlu alanları doldurun." };
   }
 
-  let musteri = (
-    await db.orm.public.Musteri.where({ isletmeId, ad: musteriAd }).all()
-  )[0];
+  const musteriler = await db.orm.public.Musteri.where({ isletmeId }).all();
+  let musteri = telefon
+    ? musteriler.find((m) => m.telefon && m.telefon.replace(/\D/g, "") === telefon.replace(/\D/g, ""))
+    : musteriler.find((m) => m.ad === musteriAd);
+
   if (!musteri) {
     musteri = await db.orm.public.Musteri.create({
       isletmeId,

@@ -2,6 +2,7 @@ import { db } from "@/prisma/db";
 import { aktifUyelik } from "@/lib/tenant";
 import { isletmeGuncelle, uyeEkle, uyeRolGuncelle, uyeCikar } from "./actions";
 import { Settings, Users, Building2 } from "lucide-react";
+import { SEKTORLER, sektorBul } from "@/lib/sektorler";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -65,11 +66,22 @@ export default async function AyarlarPage() {
               name="adres"
               defaultValue={isletme?.adres || ""}
             />
-            <Input
-              label="Sektör"
-              name="sektor"
-              defaultValue={isletme?.sektor || "oto-servis"}
-            />
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                Sektör
+              </label>
+              <select
+                name="sektor"
+                defaultValue={isletme?.sektor || "oto-servis"}
+                className="flex h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
+              >
+                {SEKTORLER.map((s) => (
+                  <option key={s.kod} value={s.kod}>
+                    {s.ad}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div className="flex justify-end">
               <Button type="submit" size="sm">
                 Kaydet
@@ -91,6 +103,32 @@ export default async function AyarlarPage() {
               <strong>Sektör:</strong> {isletme?.sektor}
             </p>
           </div>
+        )}
+      </Card>
+
+      {/* Plan ve Modüller */}
+      <Card className="p-5">
+        <h2 className="font-semibold text-zinc-900 dark:text-white mb-2">Plan ve Modüller</h2>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+          Plan: <strong>{isletme?.plan || "FREE"}</strong>
+        </p>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
+          Sektör: <strong>{sektorBul(isletme?.sektor || "oto-servis").ad}</strong>
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {sektorBul(isletme?.sektor || "oto-servis").moduller.map((m) => (
+            <span
+              key={m}
+              className="text-xs px-2 py-1 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
+            >
+              {m}
+            </span>
+          ))}
+        </div>
+        {isletme?.plan !== "PREMIUM" && (
+          <p className="text-xs text-zinc-400 mt-3">
+            Premium ile OCR sınırsız, otomatik WhatsApp ve gelişmiş modüller açılır.
+          </p>
         )}
       </Card>
 

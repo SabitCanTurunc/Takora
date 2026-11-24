@@ -143,7 +143,9 @@ model Is {
   oncelik         Int       @default(0)
   tahminiTutar    Float?
   gercekTutar     Float?
+  km              Int?
   takipToken      String?   @unique
+  takipTokenExpiresAt DateTime?
   odemeDurumu     OdemeDurumu @default(ODENMEDI)
   teslimTarihi    DateTime?
   createdAt       DateTime  @default(now()) @onCreate(now())
@@ -183,6 +185,7 @@ model IsFoto {
   id        String   @id @onCreate(cuid(2))
   isId      String
   key       String
+  tip       String   @default("FOTO")
   createdAt DateTime @default(now()) @onCreate(now())
 
   is        Is       @relation(fields: [isId], references: [id], onDelete: Cascade)

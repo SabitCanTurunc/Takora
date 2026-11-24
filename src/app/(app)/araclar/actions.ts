@@ -2,11 +2,12 @@
 
 import { db } from "@/prisma/db";
 import { revalidatePath } from "next/cache";
-import { aktifIsletmeId } from "@/lib/tenant";
+import { aktifIsletmeId, yetkiKontrol } from "@/lib/tenant";
 import { geminiExtract, openaiExtract, providerForPlan } from "@/lib/ai";
 import sharp from "sharp";
 
 export async function aracEkle(formData: FormData) {
+  await yetkiKontrol("CALISAN");
   const isletmeId = await aktifIsletmeId();
 
   const plaka = String(formData.get("plaka") || "").trim().toUpperCase();
@@ -20,9 +21,10 @@ export async function aracEkle(formData: FormData) {
     return { hata: "Plaka ve müşteri adı zorunludur." };
   }
 
-  let musteri = (
-    await db.orm.public.Musteri.where({ isletmeId, ad: musteriAd }).all()
-  )[0];
+  const musteriler = await db.orm.public.Musteri.where({ isletmeId }).all();
+  let musteri = telefon
+    ? musteriler.find((m) => m.telefon && m.telefon.replace(/\D/g, "") === telefon.replace(/\D/g, ""))
+    : musteriler.find((m) => m.ad === musteriAd);
 
   if (!musteri) {
     musteri = await db.orm.public.Musteri.create({
@@ -30,6 +32,18 @@ export async function aracEkle(formData: FormData) {
       ad: musteriAd,
       telefon: telefon || null,
     });
+  }
+
+  const temizPlaka = plaka.replace(/\s+/g, "").toUpperCase();
+  const mevcutAraclar = await db.orm.public.Arac.where({}).all();
+  const musteriIds = new Set(musteriler.map((m) => m.id));
+  const plakaMevcut = mevcutAraclar.find(
+    (a) =>
+      musteriIds.has(a.musteriId) &&
+      a.plaka && a.plaka.replace(/\s+/g, "").toUpperCase() === temizPlaka
+  );
+  if (plakaMevcut) {
+    return { hata: "Bu plaka zaten kayıtlı." };
   }
 
   await db.orm.public.Arac.create({
@@ -45,6 +59,7 @@ export async function aracEkle(formData: FormData) {
   return null;
 }
 export async function ruhsatOcr(formData: FormData) {
+  await yetkiKontrol("CALISAN");
   const isletmeId = await aktifIsletmeId();
 
   const isletme = await db.orm.public.Isletme.where({ id: isletmeId }).first();

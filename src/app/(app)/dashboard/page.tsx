@@ -55,10 +55,10 @@ export default async function DashboardPage() {
     isIds.length > 0
       ? await db.orm.public.IsFoto.where((f) => f.isId.in(isIds)).all()
       : [];
-  const fotoMap = new Map<string, { id: string; key: string }[]>();
+  const fotoMap = new Map<string, { id: string; key: string; tip?: string }[]>();
   for (const f of fotolar) {
     const list = fotoMap.get(f.isId) || [];
-    list.push({ id: f.id, key: f.key });
+    list.push({ id: f.id, key: f.key, tip: f.tip });
     fotoMap.set(f.isId, list);
   }
 
@@ -79,6 +79,7 @@ export default async function DashboardPage() {
       }),
       telefon: musteri?.telefon || undefined,
       tahminiTutar: is.tahminiTutar,
+      km: is.km,
       aciklama: is.aciklama,
       notlar: notMap.get(is.id) || [],
       fotolar: fotoMap.get(is.id) || [],
